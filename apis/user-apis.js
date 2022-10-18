@@ -9,11 +9,12 @@ userRoutes.get('/users', (req, res) => {
 
     MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
         if (err) throw err;
-        var dbo = db.db(DB_NAME);
+        var dbo = db.db(process.env.DB_NAME);
         dbo.collection("users").find({}).toArray(function (err, result) {
             if (err) throw err;
             console.log(result);
             db.close();
+            return res.json(result)
         });
     });
 
@@ -47,7 +48,7 @@ userRoutes.delete('/users', (req, res) => {
 
 })
 
-
+//create user in system?
 userRoutes.post('/users/:username/:password', (req, res) => {
 
     let user = {
@@ -65,26 +66,22 @@ userRoutes.post('/users/:username/:password', (req, res) => {
         })
     }
 
-    //read from file to fetch prev data
-    let fileContent = fs.readFileSync('./data/users.json');
+    MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db(process.env.DB_NAME);
 
-    // convert to json
-    let usersList = JSON.parse(fileContent);
+        dbo.collection("users").insertOne(user, function (err, dbResult) {
+            if (err) throw err;
+            console.log("1 document inserted");
+            console.log(dbResult);
+            db.close();
+            return res.json({
+                status: true,
+                message: 'Added successfully.'
+            })
+        });
+    });
 
-    // push new item
-    usersList.push(user)
-
-    // convert back to string
-    let newFileContent = JSON.stringify(usersList)
-
-    //write to file 
-
-    fs.writeFileSync('./data/users.json', newFileContent)
-
-    res.json({
-        status: true,
-        message: 'Added successfully.'
-    })
 })
 
 
