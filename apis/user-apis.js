@@ -1,14 +1,22 @@
 import { Router } from "express";
 import fs from 'fs';
+import { MongoClient } from 'mongodb'
 
 const userRoutes = Router();
 
 //get all
 userRoutes.get('/users', (req, res) => {
 
-    let fileContent = fs.readFileSync('./data/users.json');
-    let data = JSON.parse(fileContent);
-    return res.json(data)
+    MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db(DB_NAME);
+        dbo.collection("users").find({}).toArray(function (err, result) {
+            if (err) throw err;
+            console.log(result);
+            db.close();
+        });
+    });
+
 
 })
 
@@ -56,7 +64,7 @@ userRoutes.post('/users/:username/:password', (req, res) => {
             message: 'Password must have --> Minimum eight characters, at least one letter, one number and one special character:'
         })
     }
-    
+
     //read from file to fetch prev data
     let fileContent = fs.readFileSync('./data/users.json');
 
