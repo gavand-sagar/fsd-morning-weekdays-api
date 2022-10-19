@@ -1,46 +1,52 @@
 import { Router } from "express";
 import fs from 'fs';
 import { generateUUID } from '../utilities/utility.js'
+import { MongoClient } from 'mongodb'
 const postRoutes = Router()
 
 postRoutes.post('/posts', (req, res) => {
-
-    //read from file to fetch prev data
-    let fileContent = fs.readFileSync('./data/articles.json');
-
-    // convert to json
-    let postsList = JSON.parse(fileContent);
-
-
     let obj = {
         author: req.query.author,
         heading: req.query.heading,
         content: req.query.content,
+        comments:[],
+        likes:0,
         Id: generateUUID()
     }
 
+    MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db(process.env.DB_NAME);
 
+        dbo.collection("posts").insertOne(obj, function (err, dbResult) {
+            if (err) throw err;
+            console.log("1 document inserted");
+            console.log(dbResult);
+            db.close();
+            return res.json({
+                status: true,
+                message: 'Added successfully.'
+            })
+        });
+    });
 
-    // push new item
-    postsList.push(obj)
-
-    // convert back to string
-    let newFileContent = JSON.stringify(postsList)
-
-    //write to file 
-
-    fs.writeFileSync('./data/articles.json', newFileContent)
-
-
-    res.json({})
 
 })
 
 
+
+// get all post
 postRoutes.get('/posts', (req, res) => {
-    let fileContent = fs.readFileSync('./data/articles.json');
-    let postsList = JSON.parse(fileContent);
-    res.json(postsList)
+    MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db(process.env.DB_NAME);
+        dbo.collection("posts").find({}).toArray(function (err, result) {
+            if (err) throw err;
+            console.log(result);
+            db.close();
+            return res.json(result)
+        });
+    });
 })
 
 
@@ -188,8 +194,8 @@ postRoutes.delete('/posts/:id/comments/:comment', (req, res) => {
     let postsList = JSON.parse(fileContent);
 
 
-    
-    
+
+
     // code to delete?
     let postIndex = postsList.findIndex(x => x.Id == Id)
     if (postIndex > -1) {
@@ -203,8 +209,8 @@ postRoutes.delete('/posts/:id/comments/:comment', (req, res) => {
 
     }
 
-    
-    
+
+
     let dataToWrite = JSON.stringify(postsList)
     fs.writeFileSync('./data/articles.json', dataToWrite);
 
