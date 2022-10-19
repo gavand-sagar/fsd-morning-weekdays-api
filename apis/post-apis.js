@@ -1,7 +1,7 @@
 import { Router } from "express";
 import fs from 'fs';
 import { generateUUID } from '../utilities/utility.js'
-import { MongoClient } from 'mongodb'
+import { MongoClient,ObjectId } from 'mongodb'
 const postRoutes = Router()
 
 postRoutes.post('/posts', (req, res) => {
@@ -9,9 +9,8 @@ postRoutes.post('/posts', (req, res) => {
         author: req.query.author,
         heading: req.query.heading,
         content: req.query.content,
-        comments:[],
-        likes:0,
-        Id: generateUUID()
+        comments: [],
+        likes: 0
     }
 
     MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
@@ -69,24 +68,23 @@ postRoutes.get('/posts/:id', (req, res) => {
 postRoutes.delete('/posts/:id', (req, res) => {
 
     const Id = req.params.id
+    MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db(process.env.DB_NAME);
 
-    let fileContent = fs.readFileSync('./data/articles.json');
-    let postsList = JSON.parse(fileContent);
+        var matchQuery = { _id: ObjectId(Id) };
 
 
-    // code to delete?
-    let index = postsList.findIndex(x => x.Id == Id)
-    if (index > -1) {
-        postsList.splice(index, 1);
-    }
-
-    let dataToWrite = JSON.stringify(postsList)
-    fs.writeFileSync('./data/articles.json', dataToWrite);
-
-    res.json({
-        status: true,
-        data: postsList
-    })
+        dbo.collection("posts").deleteOne(matchQuery, function (err, obj) {
+            if (err) throw err;
+            console.log("1 document deleted");
+            db.close();
+            return res.json({
+                status: true,
+                data: []
+            })
+        });
+    });
 })
 
 
