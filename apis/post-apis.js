@@ -72,9 +72,7 @@ postRoutes.delete('/posts/:id', (req, res) => {
     MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
         if (err) throw err;
         var dbo = db.db(process.env.DB_NAME);
-
         var matchQuery = { _id: ObjectId(Id) };
-
 
         dbo.collection(ContainerNames.Post).deleteOne(matchQuery, function (err, obj) {
             if (err) throw err;
@@ -87,6 +85,7 @@ postRoutes.delete('/posts/:id', (req, res) => {
         });
     });
 })
+
 
 
 
@@ -137,28 +136,36 @@ postRoutes.get('/posts/:id/dislike', (req, res) => {
 
     const Id = req.params.id
 
-    let fileContent = fs.readFileSync('./data/articles.json');
-    let postsList = JSON.parse(fileContent);
+    //UPDATE
+    MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db(process.env.DB_NAME);
+        dbo.collection(ContainerNames.Post).findOne({ _id: ObjectId(Id) }, function (err, result) {
+            if (err) throw err;
+            console.log("result", result);
+
+            // after fetching record
+            if (result) {
+                let myquery = { _id: ObjectId(Id) }
+                var newvalues = { $set: { likes: result.likes - 1 } };
+                dbo.collection(ContainerNames.Post).updateOne(myquery, newvalues, function (err1, res) {
+                    if (err1) throw err1;
+                    console.log("1 document updated");
+                    db.close();
+                });
+            } else {
+                db.close();
+            }
+
+            res.json({
+                status: true,
+                data: []
+            })
+        });
 
 
-    // code to delete?
-    let index = postsList.findIndex(x => x.Id == Id)
-    if (index > -1) {
-        if (!postsList[index].likes) {
-            postsList[index].likes = 0;
-        } else {
-            postsList[index].likes = postsList[index].likes - 1;
-        }
+    });
 
-    }
-
-    let dataToWrite = JSON.stringify(postsList)
-    fs.writeFileSync('./data/articles.json', dataToWrite);
-
-    res.json({
-        status: true,
-        data: postsList
-    })
 })
 
 
@@ -166,30 +173,50 @@ postRoutes.get('/posts/:id/dislike', (req, res) => {
 
 
 
-
+// create comment // not a good choice to user "GET" as method
 postRoutes.get('/posts/:id/comments/:comment', (req, res) => {
 
     const Id = req.params.id
-    const comment = req.params.comment
+    const comment = req.params.comment;
 
-    let fileContent = fs.readFileSync('./data/articles.json');
-    let postsList = JSON.parse(fileContent);
+    MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db(process.env.DB_NAME);
+        dbo.collection(ContainerNames.Post).findOne({ _id: ObjectId(Id) }, function (err, result) {
+            if (err) throw err;
+            console.log("result", result);
+
+            // after fetching record
+            if (result) {
+                //read prev and push new
+                let oldComments = result.comments;
+                oldComments.push(comment)
+
+                let myquery = { _id: ObjectId(Id) }
+
+                //how new post object will look like
+                var newvalues = { $set: { comments: oldComments } };
+
+                //actual update procedure
+                dbo.collection(ContainerNames.Post).updateOne(myquery, newvalues, function (err1, res) {
+                    if (err1) throw err1;
+                    console.log("1 document updated");
+                    db.close();
+                });
+            } else {
+                db.close();
+            }
+
+            res.json({
+                status: true,
+                data: []
+            })
+        });
+
+    });
 
 
-    let index = postsList.findIndex(x => x.Id == Id)
-    if (index > -1) {
-        postsList[index].comments.push(comment)
-    }
 
-
-
-    let dataToWrite = JSON.stringify(postsList)
-    fs.writeFileSync('./data/articles.json', dataToWrite);
-
-    res.json({
-        status: true,
-        data: postsList
-    })
 })
 
 

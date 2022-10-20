@@ -9,7 +9,7 @@ const hash = crypto.createHash('sha256', "TutorialsPoint").digest('hex');
 
 console.log(hash)
 
-// insert
+// ////insert
 // MongoClient.connect(url, function (err, db) {
 //   if (err) throw err;
 //   var dbo = db.db("mydb");
