@@ -1,7 +1,7 @@
 import { Router } from "express";
 import fs from 'fs';
 import { MongoClient, ObjectId } from 'mongodb'
-import { getAllItemsFromCollection } from '../mongo-wrapper.js'
+import { getAllItemsFromCollection, saveItemInCollection, deleteItemFromCollection } from '../mongo-wrapper.js'
 const userRoutes = Router();
 
 //get all
