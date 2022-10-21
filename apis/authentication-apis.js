@@ -12,7 +12,7 @@ authenticationRoutes.get('/authenticate/:username/:password', (req, res) => {
     MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
         if (err) throw err;
         var dbo = db.db(process.env.DB_NAME);
-        
+
         dbo.collection("users").find({
             username: username,
             password: password
@@ -21,13 +21,13 @@ authenticationRoutes.get('/authenticate/:username/:password', (req, res) => {
             db.close();
 
             //to check if record present like this
-            if(result && result.length > 0){
+            if (result && result.length > 0) {
                 let responseObj = {
                     status: true,
                     username: result[0].username
                 }
                 return res.json(responseObj)
-            }else{
+            } else {
                 let responseObj = {
                     status: false
                 }

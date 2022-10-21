@@ -3,9 +3,10 @@ import fs from 'fs';
 import { generateUUID } from '../utilities/utility.js'
 import { MongoClient, ObjectId } from 'mongodb'
 import { ContainerNames } from '../db-constants.js'
+import { getAllItemsFromCollection } from "../mongo-wrapper.js";
 const postRoutes = Router()
 
-postRoutes.post('/posts', (req, res) => {
+postRoutes.post('/posts',async (req, res) => {
     let obj = {
         author: req.query.author,
         heading: req.query.heading,
@@ -13,82 +14,35 @@ postRoutes.post('/posts', (req, res) => {
         comments: [],
         likes: 0
     }
-
-    MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
-        if (err) throw err;
-        var dbo = db.db(process.env.DB_NAME);
-
-        dbo.collection(ContainerNames.Post).insertOne(obj, function (err, dbResult) {
-            if (err) throw err;
-            console.log("1 document inserted");
-            console.log(dbResult);
-            db.close();
-            return res.json({
-                status: true,
-                message: 'Added successfully.'
-            })
-        });
-    });
-
+    let result = await saveItemInCollection("posts", obj)
+    return res.json({ status: true, message: 'Added Successfully.' })
 
 })
-
-
 
 // get all post
-postRoutes.get('/posts', (req, res) => {
-    MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
-        if (err) throw err;
-        var dbo = db.db(process.env.DB_NAME);
-        dbo.collection(ContainerNames.Post).find({}).toArray(function (err, result) {
-            if (err) throw err;
-            console.log(result);
-            db.close();
-            return res.json(result)
-        });
-    });
+postRoutes.get('/posts',async (req, res) => {
+    let result = await getAllItemsFromCollection("posts");
+    return res.json(result)
 })
-
-
 
 postRoutes.get('/posts/:id', (req, res) => {
 
     let id = req.params.id
-
     let fileContent = fs.readFileSync('./data/articles.json');
     let data = JSON.parse(fileContent);
-
     let singleItem = data.find(x => x.Id == id)
-
     return res.json(singleItem)
 
 })
 
-
-
-postRoutes.delete('/posts/:id', (req, res) => {
+postRoutes.delete('/posts/:id', async (req, res) => {
 
     const Id = req.params.id
-    MongoClient.connect(process.env.DB_CONNECTION_STRING, function (err, db) {
-        if (err) throw err;
-        var dbo = db.db(process.env.DB_NAME);
-        var matchQuery = { _id: ObjectId(Id) };
+    var matchQuery = { _id: ObjectId(Id) };
+    let result = await deleteItemFromCollection("posts", matchQuery)
+    return res.json(result);
 
-        dbo.collection(ContainerNames.Post).deleteOne(matchQuery, function (err, obj) {
-            if (err) throw err;
-            console.log("1 document deleted");
-            db.close();
-            return res.json({
-                status: true,
-                data: []
-            })
-        });
-    });
 })
-
-
-
-
 
 postRoutes.get('/posts/:id/like', (req, res) => {
 
@@ -229,9 +183,6 @@ postRoutes.delete('/posts/:id/comments/:comment', (req, res) => {
     let fileContent = fs.readFileSync('./data/articles.json');
     let postsList = JSON.parse(fileContent);
 
-
-
-
     // code to delete?
     let postIndex = postsList.findIndex(x => x.Id == Id)
     if (postIndex > -1) {
@@ -244,8 +195,6 @@ postRoutes.delete('/posts/:id/comments/:comment', (req, res) => {
         }
 
     }
-
-
 
     let dataToWrite = JSON.stringify(postsList)
     fs.writeFileSync('./data/articles.json', dataToWrite);
