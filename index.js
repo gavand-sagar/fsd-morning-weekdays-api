@@ -4,7 +4,7 @@ import cors from 'cors'
 import userRoutes from './apis/user-apis.js'
 import postRoutes from './apis/post-apis.js'
 import authenticationRoutes from './apis/authentication-apis.js'
-
+import authenticationHandler from './utilities/authentication-middleware.js'
 import dotenv from 'dotenv'
 dotenv.config('.env')
 
@@ -14,8 +14,8 @@ app.use(express.json())
 
 app.use(express.static('public'))
 
-app.use('/', userRoutes)
-app.use('/', postRoutes)
+app.use('/', authenticationHandler, userRoutes)
+app.use('/', authenticationHandler, postRoutes)
 app.use('/', authenticationRoutes)
 
 app.listen(process.env.PORT, () => {

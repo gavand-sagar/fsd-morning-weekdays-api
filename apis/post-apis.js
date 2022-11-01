@@ -6,7 +6,7 @@ import { ContainerNames } from '../db-constants.js'
 import { deleteItemFromCollection, getAllItemsFromCollection, saveItemInCollection } from "../mongo-wrapper.js";
 const postRoutes = Router()
 
-postRoutes.post('/posts',async (req, res) => {
+postRoutes.post('/posts',async (req, res) => {    
     let obj = {
         author: req.query.author,
         heading: req.query.heading,
